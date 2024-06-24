@@ -2,12 +2,12 @@
 #
 # Get latest from https://github.com/github/gitignore/blob/main/Unity.gitignore
 #
-# Ignore the following directories
-[Ll]ibrary/
-[Tt]emp/
-[Oo]bj/
-[Bb]uild/
-
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
 
 # MemoryCaptures can get excessive in size.
 # They also could contain extremely sensitive data
@@ -53,8 +53,6 @@ ExportedObj/
 
 # Unity3D generated file on crash reports
 sysinfo.txt
-
-
 
 # Crashlytics generated file
 crashlytics-build.properties
