@@ -1,0 +1,172 @@
+{
+    "m_SelectedDeviceId": "RFCW90HL03J",
+    "m_SelectedProcess": {
+        "deviceId": "RFCW90HL03J",
+        "name": "com.DefaultCompany.com.unity.template.mobile2D",
+        "processId": 26793,
+        "exited": false
+    },
+    "m_SelectedPriority": 0,
+    "m_KnownProcessesForSerialization": [
+        {
+            "deviceId": "RFCW90HL03J",
+            "name": "com.sec.android.app.launcher",
+            "processId": 2852,
+            "exited": false
+        },
+        {
+            "deviceId": "RFCW90HL03J",
+            "name": "com.DefaultCompany.com.unity.template.mobile2D",
+            "processId": 24911,
+            "exited": true
+        },
+        {
+            "deviceId": "RFCW90HL03J",
+            "name": "com.DefaultCompany.com.unity.template.mobile2D",
+            "processId": 27246,
+            "exited": true
+        },
+        {
+            "deviceId": "RFCW90HL03J",
+            "name": "com.DefaultCompany.com.unity.template.mobile2D",
+            "processId": 27855,
+            "exited": true
+        },
+        {
+            "deviceId": "RFCW90HL03J",
+            "name": "com.DefaultCompany.com.unity.template.mobile2D",
+            "processId": 31331,
+            "exited": true
+        },
+        {
+            "deviceId": "RFCW90HL03J",
+            "name": "com.facebook.orca",
+            "processId": 30970,
+            "exited": false
+        },
+        {
+            "deviceId": "RFCW90HL03J",
+            "name": "com.DefaultCompany.com.unity.template.mobile2D",
+            "processId": 15848,
+            "exited": false
+        },
+        {
+            "deviceId": "RFCW90HL03J",
+            "name": "com.DefaultCompany.com.unity.template.mobile2D",
+            "processId": 12970,
+            "exited": false
+        },
+        {
+            "deviceId": "RFCW90HL03J",
+            "name": "com.DefaultCompany.com.unity.template.mobile2D",
+            "processId": 4972,
+            "exited": false
+        },
+        {
+            "deviceId": "RFCW90HL03J",
+            "name": "com.DefaultCompany.com.unity.template.mobile2D",
+            "processId": 6042,
+            "exited": false
+        },
+        {
+            "deviceId": "RFCW90HL03J",
+            "name": "com.DefaultCompany.com.unity.template.mobile2D",
+            "processId": 22362,
+            "exited": false
+        },
+        {
+            "deviceId": "RFCW90HL03J",
+            "name": "com.DefaultCompany.com.unity.template.mobile2D",
+            "processId": 3856,
+            "exited": false
+        },
+        {
+            "deviceId": "RFCW90HL03J",
+            "name": "com.DefaultCompany.com.unity.template.mobile2D",
+            "processId": 26793,
+            "exited": false
+        }
+    ],
+    "m_Tags": {
+        "m_Entries": [
+            {
+                "m_Name": "Filter by all listed tags",
+                "m_Selected": false
+            },
+            {
+                "m_Name": "No Filter",
+                "m_Selected": true
+            },
+            {
+                "m_Name": "",
+                "m_Selected": false
+            },
+            {
+                "m_Name": "Tag Control...",
+                "m_Selected": false
+            },
+            {
+                "m_Name": "",
+                "m_Selected": false
+            },
+            {
+                "m_Name": "Unity",
+                "m_Selected": false
+            },
+            {
+                "m_Name": "CRASH",
+                "m_Selected": false
+            }
+        ]
+    },
+    "m_ExtraWindowState": {
+        "Type": 0,
+        "Height": 0.0
+    },
+    "m_MemoryViewerState": {
+        "MemoryWindowWidth": 170.0,
+        "MemoryTypeEnabled": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+        ],
+        "MemoryGroup": 2,
+        "AutoCapture": true
+    },
+    "m_FilterOptions": {
+        "m_Filter": "",
+        "m_UseRegularExpressions": false,
+        "m_MatchCase": false
+    },
+    "m_SymbolPaths": [],
+    "m_CaptureVideoSettings": {
+        "TimeLimitEnabled": false,
+        "TimeLimit": 180,
+        "VideoSizeEnabled": false,
+        "VideoSizeX": 1280,
+        "VideoSizeY": 720,
+        "BitRateEnabled": false,
+        "BitRateK": 20000,
+        "DisplayIdEnabled": false,
+        "DisplayId": ""
+    },
+    "m_InputSettings": {
+        "ShiftModifier": false,
+        "SendText": "",
+        "PosixKillSignal": 0,
+        "TargetProcess": {
+            "deviceId": "",
+            "name": "",
+            "processId": 0,
+            "exited": false
+        }
+    },
+    "m_AutoScroll": 0
+}
