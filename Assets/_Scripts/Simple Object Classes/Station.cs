@@ -24,7 +24,7 @@ public class Station : MonoBehaviour
 
     public string[] lineExtensionsInEachDirection = new string[8];
 
-    private CircleLineGenerator circleLineGenerator;
+    private LineGenerator lineGenerator;
 
     private void Start()
     {
@@ -32,7 +32,7 @@ public class Station : MonoBehaviour
         id = stationsParent.StationCount++;
         AssignRandomShape(stationsParent);
 
-        circleLineGenerator = GameObject.Find("GameController").GetComponent<CircleLineGenerator>();
+        lineGenerator = GameObject.Find("GameController").GetComponent<LineGenerator>();
 
         stationConnections =             new List<string>();
         connectionsAmountToEachStation = new List<int>();
@@ -248,7 +248,7 @@ public class Station : MonoBehaviour
 
     #region Line Extension Management
 
-    public void AddLineExtension(string colorName, Color glowColor,Color originalColor)
+    public void AddLineExtension(string colorName, Color originalColor)
     {
         int extDirection = GetFreeExtensionDirection(colorName);
 
@@ -260,17 +260,10 @@ public class Station : MonoBehaviour
         extension.transform.rotation = Quaternion.Euler(0,0,extDirection*45+225); //Very magic number, ik
         extension.transform.SetParent(transform);
 
-        bool lineGlow = circleLineGenerator.lineGlow;
+        bool lineGlow = lineGenerator.lineGlow;
 
-        foreach(Transform child in extension.transform)
-        {
-            if(lineGlow)
-                child.GetComponent<SpriteRenderer>().material.SetColor("_GlowColor",glowColor);
-            else{
-                child.GetComponent<SpriteRenderer>().material = Resources.Load<Material>("Materials/Def Unlit");
-                child.GetComponent<SpriteRenderer>().color = originalColor;
-            }
-        }
+        extension.GetComponent<LineExtension>().SetInitialColor(originalColor);
+        extension.GetComponent<LineExtension>().ToggleGlow(lineGlow);
 
 
         lineExtensionsInEachDirection[extDirection] = colorName;

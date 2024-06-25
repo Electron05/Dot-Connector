@@ -48,7 +48,7 @@ public class ColorChainManager : MonoBehaviour
         }
     }
 
-    public void GenerateChainExtensions(string colorName, Color glowColor, Color originalColor){ //repetition
+    public void GenerateChainExtensions(string colorName, Color originalColor){ //repetition
         int colorChainIndex;
         for(colorChainIndex = 0; colorChainIndex < colorChains.Count; colorChainIndex++){
             if(colorChains[colorChainIndex].color == colorName){
@@ -64,7 +64,7 @@ public class ColorChainManager : MonoBehaviour
 
         foreach (var station in FindObjectsByType<Station>(FindObjectsSortMode.None)){
             if(station.GetId() == startId || station.GetId() == endId){
-                station.AddLineExtension(colorName, glowColor, originalColor);
+                station.AddLineExtension(colorName, originalColor);
             } 
         }
     }

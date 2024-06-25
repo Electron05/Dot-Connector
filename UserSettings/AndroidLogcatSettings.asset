@@ -3,7 +3,7 @@
     "m_SelectedProcess": {
         "deviceId": "RFCW90HL03J",
         "name": "com.DefaultCompany.com.unity.template.mobile2D",
-        "processId": 26793,
+        "processId": 1255,
         "exited": false
     },
     "m_SelectedPriority": 0,
@@ -84,6 +84,12 @@
             "deviceId": "RFCW90HL03J",
             "name": "com.DefaultCompany.com.unity.template.mobile2D",
             "processId": 26793,
+            "exited": false
+        },
+        {
+            "deviceId": "RFCW90HL03J",
+            "name": "com.DefaultCompany.com.unity.template.mobile2D",
+            "processId": 1255,
             "exited": false
         }
     ],
