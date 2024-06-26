@@ -3,8 +3,8 @@ using UnityEngine;
 
 public class Station : MonoBehaviour
 {
-    const float DIAGONAL_PORT_OFFSET = 0.105f;
-    const float STRAIGHT_PORT_OFFSET = 0.15f;
+    const float DIAGONAL_PORT_OFFSET = 0.07f;
+    const float STRAIGHT_PORT_OFFSET = 0.1f;
 
     public GameObject chainExtensionPrefab;
 

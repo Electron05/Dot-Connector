@@ -11,12 +11,14 @@ public class LineExtension : MonoBehaviour
     {
         foreach (Transform linePart in transform)
         {
+            if(linePart.gameObject.name == "Collider") continue; // Skip the collider (it shouldn't be visible)
             linePart.GetComponent<SpriteRenderer>().color = color;
         }
     }
 
     public void ToggleGlow(bool glow){
         foreach (Transform linePart in transform){
+            if(linePart.gameObject.name == "Collider") continue; // Skip the collider (it shouldn't be visible)
             if (glow){
                 linePart.GetComponent<Renderer>().material = Resources.Load<Material>("Materials/2D Glow");
 

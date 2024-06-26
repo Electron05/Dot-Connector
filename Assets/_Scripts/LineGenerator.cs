@@ -8,9 +8,9 @@ public class LineGenerator : MonoBehaviour
 {
     const int OFFSCREENSPAWN_COORDINATE = 1000;
     const float Z_LAYER_OFFSET = 0.1f;
-
     const float DEGREE_45_HOOK_OFFSET = 1f;
 
+    const float LINE_THICKNESS = 0.05f;
 
     public GameObject linePrefab;
     public GameObject twoPartLinePrefab;
@@ -135,13 +135,13 @@ public class LineGenerator : MonoBehaviour
         Collider2D hitCollider = Physics2D.OverlapPoint(touchPosition);
         if(hitCollider == null) return;
 
-
-        if(hitCollider.CompareTag("Extension")){
-            StartDragFromExtension(hitCollider.gameObject);
-        }
-        else if (hitCollider.CompareTag("Station") && TryFindFreeColor(out currentColorIndex))
+        if (hitCollider.CompareTag("Station") && TryFindFreeColor(out currentColorIndex))
         {
             StartDragFromStation(hitCollider.gameObject);
+        }
+        else if (hitCollider.CompareTag("Extension"))
+        {
+            StartDragFromExtension(hitCollider.gameObject);
         }
     }
 
@@ -196,7 +196,7 @@ public class LineGenerator : MonoBehaviour
         Collider2D hitCollider = Physics2D.OverlapPoint(touchPosition);
         if (hitCollider == null || !hitCollider.CompareTag("Station"))
         {
-            RefactoredUpdateLine(currentHookPosition,touchPosition);
+            UpdateLine(currentHookPosition,touchPosition);
             return;
         }
 
@@ -206,12 +206,14 @@ public class LineGenerator : MonoBehaviour
 
         if (!IsStationValidToAppend(hitObject, hitStationComponent, color))
         {
-            RefactoredUpdateLine(currentHookPosition,touchPosition);
+            UpdateLine(currentHookPosition,touchPosition);
             return;
         }
 
-        if(TryToEndOldLine(hitObject)==-1)
+        if(TryToEndOldLine(hitObject)==-1){
+            UpdateLine(currentHookPosition,touchPosition);
             return;
+        }
         if (hitObject == loopFormingStation) //If formed a loop
         {
             isDragging = false;
@@ -303,7 +305,7 @@ public class LineGenerator : MonoBehaviour
     }
 
 
-    private void RefactoredUpdateLine(Vector2 startLinePosition, Vector2 endLinePosition){
+    private void UpdateLine(Vector2 startLinePosition, Vector2 endLinePosition){
 
         SetInitialDragDirection(endLinePosition-startLinePosition); // dragInitialAngleGlobal is set here
 
@@ -480,7 +482,7 @@ public class LineGenerator : MonoBehaviour
         linePart.position = new Vector3(targetPosition.x, targetPosition.y, currentLineZLayer);
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         linePart.rotation = Quaternion.Euler(0, 0, angle);
-        linePart.localScale = new Vector3(distance, 0.1f, 1f);
+        linePart.localScale = new Vector3(distance, LINE_THICKNESS, 1f);
     }
     
     #endregion
