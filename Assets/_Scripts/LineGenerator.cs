@@ -1,5 +1,6 @@
 
 using UnityEngine;
+using UnityEngine.Rendering.Universal.Internal;
 
 
 
@@ -33,14 +34,9 @@ public class LineGenerator : MonoBehaviour
     private float currentLineZLayer = 0;
 
 
-    private Vector2 currentHookPosition; // current position of the hook (the point where the line is being dragged from)
-    private Vector2 startDragPosition; // basically the same as above, but it is updated and adjusted (for example, when lines are neighboring each other)
+    private Vector2 currentHookPosition;
 
-    [SerializeField] private int dragInitialAngle = -1; //Currently "hooked" angle at the initial station
-
-
-    int currentDragPortIndex = -1; //The port index of the current (initial) station that the line is being dragged from 
-    //(port is a point on the station where the line is connected to, different ports are used to prevent lines from overlapping each other)
+    [SerializeField] private int dragInitialAngleGlobal = -1; //Currently "hooked" angle at the initial station
 
 
     private bool isDragging = false;
@@ -53,32 +49,10 @@ public class LineGenerator : MonoBehaviour
 
     #region Utility Methods
 
-    private int GetClosest45DegAngle(float angle,bool printRound){
+    private int GetClosest45DegAngle(float angle){
         int roundedAngle = (int)Mathf.Round(angle / 45f) * 45;
         if (roundedAngle==360) roundedAngle = 0;
         return roundedAngle;
-    }
-    
-    private int calculatePostBreakAngle(GameObject finalStation){ //Probably should be moved to other region
-        Vector2 finalStationToBreakDirection;
-        Vector2 difference = currentStation.transform.position - finalStation.transform.position;
-        
-        if (Vector2ToDegree(difference) % 45 == 0) {
-            finalStationToBreakDirection = difference;  //Note we are calculating the direction from station2 to station1
-        }
-        else {
-            Vector2 breakCirclePosition = current2PartLine.transform.Find("BreakCircle").position;
-            
-
-            Touch touch = Input.GetTouch(0);
-            Vector2 touchPosition = Camera.main.ScreenToWorldPoint(touch.position);
-
-
-            finalStationToBreakDirection = breakCirclePosition - touchPosition; //Note we are calculating the direction from station2 to breakCircle
-        }
-        int finalAngle = GetClosest45DegAngle(Vector2ToDegree(finalStationToBreakDirection),true);
-
-        return finalAngle;
     }
 
     private void SetZValue(Transform t, float val){
@@ -198,8 +172,7 @@ public class LineGenerator : MonoBehaviour
         }
 
 
-        startDragPosition = currentStation.transform.position;
-        currentHookPosition = startDragPosition;
+        currentHookPosition = currentStation.transform.position;
 
 
         CreateTwoPartLine();
@@ -212,8 +185,7 @@ public class LineGenerator : MonoBehaviour
 
             isChangingEndOfChain = true;
 
-            startDragPosition = station.transform.position;
-            currentHookPosition = startDragPosition;
+            currentHookPosition = station.transform.position;
             CreateTwoPartLine();
             
             isDragging = true;
@@ -224,7 +196,7 @@ public class LineGenerator : MonoBehaviour
         Collider2D hitCollider = Physics2D.OverlapPoint(touchPosition);
         if (hitCollider == null || !hitCollider.CompareTag("Station"))
         {
-            UpdateTwoPartLine(touchPosition,false);
+            RefactoredUpdateLine(currentHookPosition,touchPosition);
             return;
         }
 
@@ -234,21 +206,21 @@ public class LineGenerator : MonoBehaviour
 
         if (!IsStationValidToAppend(hitObject, hitStationComponent, color))
         {
-            UpdateTwoPartLine(touchPosition,false);
+            RefactoredUpdateLine(currentHookPosition,touchPosition);
             return;
         }
 
-        EndOldLineToStation(hitObject);
+        if(TryToEndOldLine(hitObject)==-1)
+            return;
         if (hitObject == loopFormingStation) //If formed a loop
         {
             isDragging = false;
             current2PartLine = null;
             return;
         }
-        StartNewLineAfterHook(hitCollider, hitStationComponent, color);
+        StartNewLineAfterHook(hitObject, hitStationComponent, color);
 
     }
-
 
     private void OnTouchEnded(Vector2 touchPosition)
     {
@@ -282,91 +254,42 @@ public class LineGenerator : MonoBehaviour
 
     #region Touch Moved Methods
     
-    private void UpdateTwoPartLine(Vector2 endDragPosition, bool isFinalUpdate)
-    {
 
-        if(!isFinalUpdate)
-        {
-            startDragPosition = currentHookPosition;
-            Vector2 difference = endDragPosition - startDragPosition;
-            SetInitialDragDirection(difference); 
-
-            currentDragPortIndex = currentStation.GetComponent<Station>().GetFirstFreePortIndex(dragInitialAngle/45);
-            AdjustInitialHook(currentDragPortIndex);
-        }
-
-
-        GameObject firstHalf = current2PartLine.transform.Find("FirstHalf").gameObject;
-        GameObject secondHalf = current2PartLine.transform.Find("SecondHalf").gameObject;
-        GameObject breakCircle = current2PartLine.transform.Find("BreakCircle").gameObject;
-
-
-        Vector2 earlyBreakPoint = CalculateEarlyBreakPointPosition(startDragPosition, endDragPosition);
-        Vector2 lateBreakPoint = CalculateEarlyBreakPointPosition(endDragPosition, startDragPosition);
-        Vector2 breakPoint;
-
-        if(dragInitialAngle%90==0){
-            breakPoint = lateBreakPoint;
-        }
-        else{
-            breakPoint = earlyBreakPoint;
-        }
-
-        Vector2 direction1 = breakPoint-startDragPosition;
-        float distance1 = direction1.magnitude;
-        Vector2 midPoint1 = (startDragPosition + breakPoint) / 2;
-
-        Vector2 direction2 = endDragPosition - breakPoint;
-        float distance2 = direction2.magnitude;
-        Vector2 midPoint2 = (breakPoint + endDragPosition) / 2;
-
-        SetLinePart(direction1, distance1, midPoint1, firstHalf.transform);
-        SetLinePart(direction2, distance2, midPoint2, secondHalf.transform);
-
-        breakCircle.transform.position = breakPoint;
-        breakCircle.transform.localScale = new Vector3(0.1f, 0.1f, 1f);
-
-        SetZValue(firstHalf.transform, currentLineZLayer);
-        SetZValue(secondHalf.transform, currentLineZLayer);
-        SetZValue(breakCircle.transform, currentLineZLayer-Z_LAYER_OFFSET*0.5f);
-        
-    }
     
     private void SetInitialDragDirection(Vector2 direction){
         float angle = Vector2ToDegree(direction);
 
-        bool angleIsNotSet = dragInitialAngle == -1;
+        bool angleIsNotSet = dragInitialAngleGlobal == -1;
         bool angleIsCloseTo45 = Mathf.Abs(angle % 45f) < DEGREE_45_HOOK_OFFSET || Mathf.Abs(angle % 45f - 45f) < DEGREE_45_HOOK_OFFSET;
-        bool angleIsTooFarFromInitial = Mathf.Abs(dragInitialAngle - angle) > 45f + DEGREE_45_HOOK_OFFSET && Mathf.Abs(dragInitialAngle - angle) < 310f; // The second condition is to prevent line jumps when angle is close to 0 or 360
+        bool angleIsTooFarFromInitial = Mathf.Abs(dragInitialAngleGlobal - angle) > 45f + DEGREE_45_HOOK_OFFSET && Mathf.Abs(dragInitialAngleGlobal - angle) < 310f; // The second condition is to prevent line jumps when angle is close to 0 or 360
 
         if (angleIsNotSet || angleIsCloseTo45 || angleIsTooFarFromInitial) {
-            dragInitialAngle = GetClosest45DegAngle(angle,false);
+            dragInitialAngleGlobal = GetClosest45DegAngle(angle);
         }
     }
     
-    private Vector2 CalculateEarlyBreakPointPosition(Vector2 startDragPosition, Vector2 currentDragPosition){
-        //startDragPosition here is local variable
-        Vector2 difference = currentDragPosition - startDragPosition;
+    private Vector2 CalculateEarlyBreakPointPosition(Vector2 startLinePosition, Vector2 currentDragPosition){
+        Vector2 difference = currentDragPosition - startLinePosition;
         Vector2 breakPoint = new Vector2(0,0);
 
         if(Mathf.Abs(difference.y)>Mathf.Abs(difference.x))
         { 
             breakPoint.x = currentDragPosition.x;
-            if (currentDragPosition.y < startDragPosition.y) {
-                breakPoint.y = startDragPosition.y + difference.x *(difference.x>0?-1:1);
+            if (currentDragPosition.y < startLinePosition.y) {
+                breakPoint.y = startLinePosition.y + difference.x *(difference.x>0?-1:1);
             }
             else {
-                breakPoint.y = startDragPosition.y + difference.x * (difference.x >0?1:-1);
+                breakPoint.y = startLinePosition.y + difference.x * (difference.x >0?1:-1);
             }
         }
         else 
         { 
             breakPoint.y = currentDragPosition.y;
-            if (currentDragPosition.x < startDragPosition.x) {
-                breakPoint.x = startDragPosition.x + difference.y * (difference.y > 0 ? -1 : 1);
+            if (currentDragPosition.x < startLinePosition.x) {
+                breakPoint.x = startLinePosition.x + difference.y * (difference.y > 0 ? -1 : 1);
             }
             else {
-                breakPoint.x = startDragPosition.x + difference.y * (difference.y > 0 ? 1 : -1);
+                breakPoint.x = startLinePosition.x + difference.y * (difference.y > 0 ? 1 : -1);
             }
         }
         return breakPoint;
@@ -379,37 +302,119 @@ public class LineGenerator : MonoBehaviour
             (hitObject == loopFormingStation && colorChainManager.GetColorChainLength(color) != 2)); //Except if it is the start station (loop formation)
     }
 
-    private void EndOldLineToStation(GameObject hitObject) 
-    {
-        //Ensuring that the best initial drag possible is chosen before finalizing hook (prevents the NW initial direction when connecting directly to N)
-        SetInitialDragDirection( (Vector2)hitObject.transform.position - currentHookPosition); 
-        startDragPosition = currentHookPosition; 
 
-        current2PartLine.GetComponent<Line>().to = hitObject.GetComponent<Station>().GetId();
+    private void RefactoredUpdateLine(Vector2 startLinePosition, Vector2 endLinePosition){
 
-        Vector2 positionToGetHooked = hitObject.transform.position;
-        int finalStationPortIndex, finalAngle;
+        SetInitialDragDirection(endLinePosition-startLinePosition); // dragInitialAngleGlobal is set here
 
-        AdjustFinalHook(hitObject, ref positionToGetHooked, out finalStationPortIndex, out finalAngle);
-        if ( !ShouldInvertFinalPort(hitObject, finalAngle) ) //If the angles of the connection are E-NW or W-SE, the port is inverted and we do not alter inital port
-        {
-            //otherwise, we try to set the initial port to the one that is closest to the final port
-            currentDragPortIndex = currentStation.GetComponent<Station>().GetFreePortWithPreference(dragInitialAngle/45, finalStationPortIndex);
+        int initialStationPortIndex = currentStation.GetComponent<Station>().GetFirstFreePortIndex(dragInitialAngleGlobal/45);
+        JustAdjustInitialHook(ref startLinePosition, initialStationPortIndex);
+
+        CalculateBreakPointPosition(startLinePosition, endLinePosition, out Vector2 breakPointPosition);
+
+        SetLineInPosition(startLinePosition, endLinePosition, breakPointPosition);
+    }
+
+    private int TryToEndOldLine(GameObject hitObject){
+
+        //Calculate basic connection (initial angle, final angle, break point)
+        int finalAngle;
+        Vector2 breakPointPosition;
+        Vector2 startLinePosition = currentStation.transform.position, endLinePosition = hitObject.transform.position;
+
+        SetInitialDragDirection(endLinePosition-startLinePosition); // dragInitialAngleGlobal is set here
+        CalculateFinalAngle(startLinePosition, endLinePosition, out finalAngle);
+
+        //Check for port availability 
+        //If port is not available, return
+        if(currentStation.GetComponent<Station>().GetNumberOfFreePorts(dragInitialAngleGlobal/45) == 0 || hitObject.GetComponent<Station>().GetNumberOfFreePorts(finalAngle/45) == 0){
+            return -1;
         }
-        AdjustInitialHook(currentDragPortIndex);
+        
+        //Now connection is certain
+        current2PartLine.GetComponent<Line>().to = hitObject.GetComponent<Station>().GetId();
+        AddConnectionBetweenStations(currentStation, hitObject, finalAngle);
 
-        UpdateTwoPartLine(positionToGetHooked,true);
 
-        currentStation.GetComponent<Station>().SetPortAvailability(dragInitialAngle/45, currentDragPortIndex, false);
+        
+        //If ports are available, adjust initial hook, adjust final hook, calculate new break point
+        int initialStationPortIndex = currentStation.GetComponent<Station>().GetFirstFreePortIndex(dragInitialAngleGlobal/45);
+        int finalStationPortIndex = hitObject.GetComponent<Station>().GetFreePortWithPreference(finalAngle/45, initialStationPortIndex);
+        
+
+        if ( ShouldInvertFinalPort(hitObject, finalAngle) ) {
+            finalStationPortIndex = 2-finalStationPortIndex;
+        }
+        if(initialStationPortIndex!=finalStationPortIndex && !ShouldInvertFinalPort(hitObject, finalAngle)){
+            initialStationPortIndex = currentStation.GetComponent<Station>().GetFreePortWithPreference(dragInitialAngleGlobal/45, finalStationPortIndex);
+        }
+
+        currentStation.GetComponent<Station>().SetPortAvailability(dragInitialAngleGlobal/45, initialStationPortIndex, false);
         hitObject.GetComponent<Station>().SetPortAvailability(finalAngle/45, finalStationPortIndex, false);
 
-        AddConnectionBetweenStations(currentStation, hitObject);
+        JustAdjustInitialHook(ref startLinePosition,initialStationPortIndex);
+        JustAdjustFinalHook(hitObject, ref endLinePosition, finalAngle, finalStationPortIndex);
 
-        currentHookPosition = hitObject.transform.position;
-        current2PartLine = null;
+
+        //Set physical positions of the line parts
+        CalculateBreakPointPosition(startLinePosition, endLinePosition, out breakPointPosition);
+        SetLineInPosition(startLinePosition, endLinePosition, breakPointPosition);
+        return 0;
     }
-    
-    private void StartNewLineAfterHook(Collider2D hitCollider, Station hitStationComponent, string color)
+
+    private void CalculateFinalAngle(Vector2 startLinePosition, Vector2 endLinePosition, out int finalAngle){
+        
+        SetInitialDragDirection(endLinePosition-startLinePosition); // dragInitialAngleGlobal is set here
+
+        CalculateBreakPointPosition(startLinePosition, endLinePosition, out Vector2 breakPointPosition);
+
+        if(Vector2ToDegree(endLinePosition-startLinePosition) % 45 == 0){
+            finalAngle = (int)Vector2ToDegree(startLinePosition-endLinePosition);
+            if (finalAngle == 360) finalAngle = 0;
+        }
+        else{
+            finalAngle = GetClosest45DegAngle(Vector2ToDegree(breakPointPosition-endLinePosition));
+        }
+
+    }
+
+    private void CalculateBreakPointPosition(Vector2 startLinePosition, Vector2 endLinePosition, out Vector2 breakPointPosition){
+        Vector2 earlyBreakPoint = CalculateEarlyBreakPointPosition(startLinePosition, endLinePosition);
+        Vector2 lateBreakPoint = CalculateEarlyBreakPointPosition(endLinePosition, startLinePosition);
+
+        if(dragInitialAngleGlobal%90==0){
+            breakPointPosition = lateBreakPoint;
+        }
+        else{
+            breakPointPosition = earlyBreakPoint;
+        }
+    }
+
+    private void SetLineInPosition(Vector2 startLinePosition, Vector2 endLinePosition, Vector2 breakPointPosition){
+        GameObject firstHalf = current2PartLine.transform.Find("FirstHalf").gameObject;
+        GameObject secondHalf = current2PartLine.transform.Find("SecondHalf").gameObject;
+        GameObject breakCircle = current2PartLine.transform.Find("BreakCircle").gameObject;
+
+        breakCircle.transform.position = breakPointPosition;
+        breakCircle.transform.localScale = new Vector3(0.1f, 0.1f, 1f);
+
+        Vector2 direction1 = breakPointPosition-startLinePosition;
+        float distance1 = direction1.magnitude;
+        Vector2 midPoint1 = (startLinePosition + breakPointPosition) / 2;
+
+        Vector2 direction2 = endLinePosition - breakPointPosition;
+        float distance2 = direction2.magnitude;
+        Vector2 midPoint2 = (breakPointPosition + endLinePosition) / 2;
+
+        SetLinePart(direction1, distance1, midPoint1, firstHalf.transform);
+        SetLinePart(direction2, distance2, midPoint2, secondHalf.transform);
+
+        SetZValue(firstHalf.transform, currentLineZLayer);
+        SetZValue(secondHalf.transform, currentLineZLayer);
+        SetZValue(breakCircle.transform, currentLineZLayer-Z_LAYER_OFFSET*0.5f);
+    }
+
+    private void StartNewLineAfterHook(GameObject newStation, Station hitStationComponent, string color)
     {
         if (usedColors[currentColorIndex] == false) //If starting new chain
         {
@@ -422,37 +427,25 @@ public class LineGenerator : MonoBehaviour
 
         usedColors[currentColorIndex] = true;
         //Create New Line
-        currentStation = hitCollider.gameObject;
-        startDragPosition = hitCollider.transform.position;
-        currentHookPosition = startDragPosition;
+        currentStation = newStation;
+        currentHookPosition = newStation.transform.position;
         CreateTwoPartLine();
     }
 
+
     #region Nieghbouring Lines Management
     
-    private void AdjustInitialHook(int portIndex){
-
-        currentStation.GetComponent<Station>().AdjustHookToPort(ref startDragPosition, dragInitialAngle, portIndex);
+    private void JustAdjustInitialHook(ref Vector2 startLinePosition, int initialStationPortIndex){
+        currentStation.GetComponent<Station>().AdjustHookToPort(ref startLinePosition, dragInitialAngleGlobal, initialStationPortIndex);
+    }
+    private void JustAdjustFinalHook(GameObject finalStation, ref Vector2 endLinePosition, int finalAngle, int finalStationPortIndex){
+        finalStation.GetComponent<Station>().AdjustHookToPort(ref endLinePosition, finalAngle, finalStationPortIndex);
+        
     }
     
-    private void AdjustFinalHook(GameObject finalStation, ref Vector2 endDragPosition, out int finalStationPortIndex, out int finalAngle){
-        
-        finalAngle = calculatePostBreakAngle(finalStation);
-        
-        finalStationPortIndex = finalStation.GetComponent<Station>().GetFreePortWithPreference(finalAngle/45, currentDragPortIndex);
-        
-        //Debug.Log("Final station port index: " + finalStationPortIndex );
-
-        if ( ShouldInvertFinalPort(finalStation, finalAngle) ) {
-            Debug.Log("Inverting final port from" + finalStationPortIndex + " to " + (2-finalStationPortIndex)) ;
-            finalStationPortIndex = 2-finalStationPortIndex;
-        }
-
-        finalStation.GetComponent<Station>().AdjustHookToPort(ref endDragPosition, finalAngle, finalStationPortIndex);
-    }
 
     private bool ShouldInvertFinalPort(GameObject finalStation, int finalAngle) { 
-        return  ( ( ( (dragInitialAngle-90)%180==0 && (finalAngle+45)%180==0 ) || ( ((dragInitialAngle+45)%180==0) && (finalAngle-90)%180==0 ) ) && finalStation.GetComponent<Station>().GetNumberOfFreePorts(finalAngle/45) == 2 );
+        return  ( ( ( (dragInitialAngleGlobal-90)%180==0 && (finalAngle+45)%180==0 ) || ( ((dragInitialAngleGlobal+45)%180==0) && (finalAngle-90)%180==0 ) ) && finalStation.GetComponent<Station>().GetNumberOfFreePorts(finalAngle/45) == 2 );
     }
     
     #endregion
@@ -494,7 +487,7 @@ public class LineGenerator : MonoBehaviour
 
     #region Stations logic functions
 
-    private void AddConnectionBetweenStations(GameObject station1, GameObject station2)
+    private void AddConnectionBetweenStations(GameObject station1, GameObject station2, int AngleFromFinalStation)
     {
         string colorName = colorNames[currentColorIndex];
 
@@ -503,7 +496,7 @@ public class LineGenerator : MonoBehaviour
         station2.GetComponent<Station>().AddToColorChain(colorName);
 
         AddDirectionalConnectionToInitialStation(station1, colorName);
-        AddDirectionalConnectionToFinalStation(station2, colorName);
+        AddDirectionalConnectionToFinalStation(station2, colorName,AngleFromFinalStation);
 
 
         station1.GetComponent<Station>().AddConnection(station2, colorName);
@@ -516,13 +509,12 @@ public class LineGenerator : MonoBehaviour
     private void AddDirectionalConnectionToInitialStation(GameObject station, string colorName)
     {
         //dragInitialAngle is the angle at the start of the drag (for more, see UpdateTwoPartLine method)
-        station.GetComponent<Station>().AddDirectionalConnection(colorName, dragInitialAngle/45);
+        station.GetComponent<Station>().AddDirectionalConnection(colorName, dragInitialAngleGlobal/45);
     }
 
-    private void AddDirectionalConnectionToFinalStation(GameObject finalStation, string colorName)
+    private void AddDirectionalConnectionToFinalStation(GameObject finalStation, string colorName, int finalAngle)
     {
-        int angleIndex = calculatePostBreakAngle(finalStation)/45;
-        finalStation.GetComponent<Station>().AddDirectionalConnection(colorName, angleIndex);
+        finalStation.GetComponent<Station>().AddDirectionalConnection(colorName, finalAngle/45);
     }
 
     #endregion

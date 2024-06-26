@@ -248,7 +248,7 @@ public class Station : MonoBehaviour
 
     #region Line Extension Management
 
-    public void AddLineExtension(string colorName, Color originalColor)
+    public void AddLineExtension(string colorName, Color originalColor) //To be fixed (magick numbers with mhy to unity angle conversion)
     {
         int extDirection = GetFreeExtensionDirection(colorName);
 
@@ -257,7 +257,7 @@ public class Station : MonoBehaviour
         extension.GetComponent<LineExtension>().colorName = colorName;
         extension.GetComponent<LineExtension>().stationId = id;
         
-        extension.transform.rotation = Quaternion.Euler(0,0,extDirection*45+225); //Very magic number, ik
+        extension.transform.rotation = Quaternion.Euler(0,0,extDirection*45+225); 
         extension.transform.SetParent(transform);
 
         bool lineGlow = lineGenerator.lineGlow;
@@ -304,6 +304,8 @@ public class Station : MonoBehaviour
         {
             j++;
             freeDirection = oppositeDirection + j/2*(j%2 == 0 ? 1 : -1);
+            if(freeDirection < 0)
+                freeDirection+=8;
             freeDirection%=8;
         }
 

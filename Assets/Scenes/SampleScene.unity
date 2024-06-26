@@ -1824,7 +1824,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1109606415
 Transform:
   m_ObjectHideFlags: 0
@@ -1959,7 +1959,7 @@ MonoBehaviour:
   linePrefab: {fileID: 2875002320883710032, guid: 53021ef6fae1bc24192f56e142745944, type: 3}
   twoPartLinePrefab: {fileID: 9019487827180353506, guid: 3eba085cb2006d24b996e7e821bdfba2, type: 3}
   lineGlow: 1
-  dragInitialAngle: 0
+  dragInitialAngleGlobal: -1
 --- !u!114 &1178033644
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2441,7 +2441,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1408174688
 Transform:
   m_ObjectHideFlags: 0
